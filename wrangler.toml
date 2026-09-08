@@ -13,4 +13,4 @@ binding = "DB"
 database_name = "ft-ceptova-db"
 # Placeholder for local dev. Run `wrangler d1 create ft-ceptova-db` and paste
 # the real database_id here before deploying / running against the remote DB.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "c1987b8d-4fab-464d-95b3-bcae00285c13"
