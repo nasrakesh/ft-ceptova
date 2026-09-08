@@ -39,17 +39,7 @@ export default function App() {
           Nutrition Tracker
         </span>
         <div className="app-bar-right">
-          <span className="user-email">{user.email}</span>
-          <button
-            type="button"
-            className="link-btn"
-            onClick={async () => {
-              await api.logout().catch(() => {});
-              setUser(null);
-            }}
-          >
-            Log out
-          </button>
+          <span className="user-email">{user.name || user.email}</span>
         </div>
       </header>
 
@@ -61,7 +51,16 @@ export default function App() {
             <Insights />
           </div>
         )}
-        {tab === "settings" && <Settings />}
+        {tab === "settings" && (
+          <Settings
+            user={user}
+            onUserChange={setUser}
+            onLogout={async () => {
+              await api.logout().catch(() => {});
+              setUser(null);
+            }}
+          />
+        )}
       </div>
 
       <nav className="bottom-nav">

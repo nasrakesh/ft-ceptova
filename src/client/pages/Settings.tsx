@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { api, type Category, type Goals } from "../api";
+import { api, type Category, type Goals, type User } from "../api";
 import CollapsibleSection from "../components/CollapsibleSection";
 import BodyPlan from "../components/BodyPlan";
-import { TargetIcon, UtensilsIcon, ScaleIcon } from "../icons";
+import { TargetIcon, UtensilsIcon, ScaleIcon, UserIcon } from "../icons";
 
 const GOAL_FIELDS: { key: keyof Goals; label: string; colorVar: string }[] = [
   { key: "calories", label: "Calories (kcal)", colorVar: "" },
@@ -12,7 +12,20 @@ const GOAL_FIELDS: { key: keyof Goals; label: string; colorVar: string }[] = [
   { key: "fat", label: "Fat (g)", colorVar: "--series-4" },
 ];
 
-export default function Settings() {
+export default function Settings({
+  user,
+  onUserChange,
+  onLogout,
+}: {
+  user: User;
+  onUserChange: (user: User) => void;
+  onLogout: () => void;
+}) {
+  const [name, setName] = useState(user.name ?? "");
+  const [nameSaved, setNameSaved] = useState(false);
+  const [nameBusy, setNameBusy] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
   const [goals, setGoals] = useState<Record<keyof Goals, string>>({
     calories: "",
     protein: "",
@@ -41,6 +54,22 @@ export default function Settings() {
     );
     api.categories().then((res) => setCategories(res.categories));
   }, []);
+
+  async function saveName(e: React.FormEvent) {
+    e.preventDefault();
+    setNameBusy(true);
+    setNameError(null);
+    setNameSaved(false);
+    try {
+      const updated = await api.updateAccountName(name.trim() || null);
+      onUserChange(updated);
+      setNameSaved(true);
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Failed to save name");
+    } finally {
+      setNameBusy(false);
+    }
+  }
 
   async function saveGoals(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +145,31 @@ export default function Settings() {
 
   return (
     <div className="settings-screen">
+      <CollapsibleSection title="Account" icon={<UserIcon size={18} />} accentColor="var(--accent)">
+        <form className="goals-form" onSubmit={saveName}>
+          <label>
+            Display name
+            <input
+              type="text"
+              placeholder="Your name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setNameSaved(false);
+              }}
+            />
+          </label>
+          <p className="muted account-email">{user.email}</p>
+          {nameError && <p className="error">{nameError}</p>}
+          <button type="submit" className="btn-primary" disabled={nameBusy}>
+            {nameBusy ? "Saving…" : nameSaved ? "Saved ✓" : "Save name"}
+          </button>
+        </form>
+        <button type="button" className="danger-btn logout-btn" onClick={onLogout}>
+          Log out
+        </button>
+      </CollapsibleSection>
+
       <CollapsibleSection title="Goals" icon={<TargetIcon size={18} />} accentColor="var(--series-1)" defaultOpen={false}>
         <form className="goals-form" onSubmit={saveGoals}>
           {GOAL_FIELDS.map(({ key, label, colorVar }) => (

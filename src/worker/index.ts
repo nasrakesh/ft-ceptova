@@ -100,7 +100,7 @@ app.post("/api/auth/signup", async (c) => {
   );
 
   await setSessionCookie(c, userId);
-  return c.json({ id: userId, email });
+  return c.json({ id: userId, email, name: null });
 });
 
 app.post("/api/auth/login", async (c) => {
@@ -113,17 +113,17 @@ app.post("/api/auth/login", async (c) => {
   }
 
   const user = await c.env.DB.prepare(
-    "SELECT id, email, password_hash FROM users WHERE email = ?"
+    "SELECT id, email, name, password_hash FROM users WHERE email = ?"
   )
     .bind(email)
-    .first<{ id: number; email: string; password_hash: string }>();
+    .first<{ id: number; email: string; name: string | null; password_hash: string }>();
 
   if (!user || !(await verifyPassword(password, user.password_hash))) {
     return c.json({ error: "Invalid email or password" }, 401);
   }
 
   await setSessionCookie(c, user.id);
-  return c.json({ id: user.id, email: user.email });
+  return c.json({ id: user.id, email: user.email, name: user.name });
 });
 
 app.post("/api/auth/logout", async (c) => {
@@ -136,10 +136,24 @@ app.get("/api/auth/me", async (c) => {
   const userId = token ? await verifySessionToken(token, c.env.SESSION_SECRET) : null;
   if (!userId) return c.json({ error: "Not authenticated" }, 401);
 
-  const user = await c.env.DB.prepare("SELECT id, email FROM users WHERE id = ?")
+  const user = await c.env.DB.prepare("SELECT id, email, name FROM users WHERE id = ?")
     .bind(userId)
-    .first<{ id: number; email: string }>();
+    .first<{ id: number; email: string; name: string | null }>();
   if (!user) return c.json({ error: "Not authenticated" }, 401);
+  return c.json(user);
+});
+
+app.put("/api/account", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const body = await readJson<{ name?: string | null }>(c);
+  const name = body.name?.trim() || null;
+
+  await c.env.DB.prepare("UPDATE users SET name = ? WHERE id = ?").bind(name, userId).run();
+
+  const user = await c.env.DB.prepare("SELECT id, email, name FROM users WHERE id = ?")
+    .bind(userId)
+    .first<{ id: number; email: string; name: string | null }>();
+
   return c.json(user);
 });
 

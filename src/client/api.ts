@@ -14,6 +14,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export interface User {
   id: number;
   email: string;
+  name: string | null;
 }
 
 export interface Category {
@@ -184,6 +185,8 @@ export const api = {
   login: (email: string, password: string) =>
     request<User>("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => request<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+  updateAccountName: (name: string | null) =>
+    request<User>("/api/account", { method: "PUT", body: JSON.stringify({ name }) }),
 
   categories: () => request<{ categories: Category[] }>("/api/categories"),
   addCategory: (name: string) =>
