@@ -146,3 +146,14 @@ export function categoryIconFor(name: string): { icon: (p?: IconProps) => JSX.El
   }
   return { icon: UtensilsIcon, color: "var(--muted)" };
 }
+
+export const MUSCLE_GROUP_META: Record<string, { emoji: string; color: string }> = {
+  Back: { emoji: "🏋️", color: "var(--series-1)" },
+  Chest: { emoji: "🎽", color: "var(--series-2)" },
+  Shoulder: { emoji: "🤸", color: "var(--series-3)" },
+  Triceps: { emoji: "💪", color: "var(--series-4)" },
+  Biceps: { emoji: "💪", color: "var(--series-5)" },
+  Legs: { emoji: "🦵", color: "var(--series-6)" },
+  Abdomen: { emoji: "🧘", color: "var(--series-7)" },
+  Cardio: { emoji: "🏃", color: "var(--series-8)" },
+};

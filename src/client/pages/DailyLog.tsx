@@ -1,75 +1,10 @@
 import { useEffect, useState } from "react";
-import { api, type Category, type Entry, type ExerciseEntry, type Goals, type Totals } from "../api";
+import { api, type Category, type Entry, type Goals, type Totals } from "../api";
 import LogFoodPanel from "../components/LogFoodPanel";
+import WeekStrip from "../components/WeekStrip";
 import { categoryIconFor } from "../icons";
 import { computeCategoryBudgets, budgetStatus, BUDGET_STATUS_COLOR } from "../mealBudget";
-
-function todayIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function shiftDate(iso: string, deltaDays: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  date.setDate(date.getDate() + deltaDays);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function formatDisplayDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  const today = todayIso();
-  if (iso === today) return "Today";
-  if (iso === shiftDate(today, -1)) return "Yesterday";
-  if (iso === shiftDate(today, 1)) return "Tomorrow";
-  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
-
-const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
-
-function weekDatesFor(iso: string): string[] {
-  const [y, m, d] = iso.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  const sunday = new Date(date);
-  sunday.setDate(date.getDate() - date.getDay());
-  return Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(sunday);
-    day.setDate(sunday.getDate() + i);
-    return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(
-      day.getDate()
-    ).padStart(2, "0")}`;
-  });
-}
-
-function WeekStrip({ date, onPick }: { date: string; onPick: (iso: string) => void }) {
-  const today = todayIso();
-  const week = weekDatesFor(date);
-  return (
-    <div className="week-strip">
-      {week.map((iso, i) => {
-        const dayNum = Number(iso.split("-")[2]);
-        const isSelected = iso === date;
-        const isToday = iso === today;
-        return (
-          <button
-            key={iso}
-            type="button"
-            className={isSelected ? "week-day active" : isToday ? "week-day is-today" : "week-day"}
-            onClick={() => onPick(iso)}
-          >
-            <span className="week-day-letter">{WEEKDAY_LETTERS[i]}</span>
-            <span className="week-day-num">{dayNum}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+import { todayIso, shiftDate, formatDisplayDate } from "../dateUtils";
 
 const EMPTY_TOTALS: Totals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
 
@@ -210,127 +145,6 @@ function EntryRow({
   );
 }
 
-function ExerciseCard({ date, onChange }: { date: string; onChange: () => void }) {
-  const [entries, setEntries] = useState<ExerciseEntry[]>([]);
-  const [total, setTotal] = useState(0);
-  const [adding, setAdding] = useState(false);
-  const [calories, setCalories] = useState("");
-  const [note, setNote] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function load() {
-    try {
-      const res = await api.exercise(date);
-      setEntries(res.entries);
-      setTotal(res.totalCalories);
-    } catch {
-      // non-critical, keep prior state
-    }
-  }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const cal = Number(calories);
-    if (!Number.isFinite(cal) || cal <= 0) {
-      setError("Calories must be greater than 0");
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      await api.addExercise(date, cal, note.trim() || undefined);
-      setCalories("");
-      setNote("");
-      setAdding(false);
-      await load();
-      onChange();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add exercise");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove(id: number) {
-    try {
-      await api.deleteExercise(id);
-      await load();
-      onChange();
-    } catch {
-      // ignore
-    }
-  }
-
-  return (
-    <div className="category-card exercise-card" style={{ borderLeftColor: "var(--status-good)" }}>
-      <div className="category-header" style={{ cursor: "default" }}>
-        <span className="category-icon" style={{ color: "var(--status-good)" }}>
-          🔥
-        </span>
-        <span className="category-name">Exercise</span>
-        <span className="category-subtotal">-{Math.round(total)} kcal</span>
-      </div>
-
-      {entries.length > 0 && (
-        <ul className="entry-list">
-          {entries.map((entry) => (
-            <li key={entry.id} className="entry-row">
-              <div className="entry-main">
-                <span className="entry-name">{entry.note || "Workout"}</span>
-                <span className="entry-cal">-{Math.round(entry.calories)} kcal</span>
-                <button
-                  type="button"
-                  className="delete-btn"
-                  aria-label="Delete exercise entry"
-                  onClick={() => remove(entry.id)}
-                >
-                  ✕
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {adding ? (
-        <form className="add-form" onSubmit={submit}>
-          <input
-            type="text"
-            placeholder="What did you do? (optional)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <input
-            type="number"
-            placeholder="kcal burned"
-            min={0}
-            step="any"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
-            required
-          />
-          <button type="submit" className="btn-primary" disabled={busy}>
-            {busy ? "…" : "Add"}
-          </button>
-        </form>
-      ) : (
-        <div className="category-actions">
-          <button type="button" className="add-btn" onClick={() => setAdding(true)}>
-            + Log exercise
-          </button>
-        </div>
-      )}
-      {error && <p className="error">{error}</p>}
-    </div>
-  );
-}
-
 export default function DailyLog() {
   const [date, setDate] = useState(todayIso());
   const [categories, setCategories] = useState<Category[]>([]);
@@ -456,7 +270,6 @@ export default function DailyLog() {
             </button>
           </div>
           <div className="category-list">
-            <ExerciseCard date={date} onChange={loadEntries} />
             {categories.map((category) => {
               const catEntries = entriesByCategory.get(category.id) ?? [];
               const subtotal = catEntries.reduce(

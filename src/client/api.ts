@@ -121,9 +121,40 @@ export interface InsightsDay {
   fiber: number;
 }
 
+export const MUSCLE_GROUPS = [
+  "Back",
+  "Chest",
+  "Shoulder",
+  "Triceps",
+  "Biceps",
+  "Legs",
+  "Abdomen",
+  "Cardio",
+] as const;
+
+export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
+
+export interface Exercise {
+  id: number;
+  name: string;
+  muscle_group: string;
+  unit_label: string;
+  avg_calories: number;
+  is_global: number;
+}
+
+export interface NewExercise {
+  name: string;
+  muscle_group: string;
+  unit_label: string;
+  avg_calories: number;
+}
+
 export interface ExerciseEntry {
   id: number;
-  date: string;
+  exercise_id: number | null;
+  muscle_group: string | null;
+  quantity: number;
   calories: number;
   note: string | null;
   created_at: string;
@@ -202,11 +233,23 @@ export const api = {
   insights: (month: string) => request<Insights>(`/api/insights?month=${month}`),
 
   exercise: (date: string) => request<ExerciseResponse>(`/api/exercise?date=${date}`),
-  addExercise: (date: string, calories: number, note?: string) =>
+  addExerciseEntryFromCatalog: (date: string, exercise_id: number, quantity: number) =>
+    request<ExerciseEntry>("/api/exercise", {
+      method: "POST",
+      body: JSON.stringify({ date, exercise_id, quantity }),
+    }),
+  addCustomExerciseEntry: (date: string, calories: number, note?: string) =>
     request<ExerciseEntry>("/api/exercise", {
       method: "POST",
       body: JSON.stringify({ date, calories, note }),
     }),
   deleteExercise: (id: number) =>
     request<{ ok: true }>(`/api/exercise/${id}`, { method: "DELETE" }),
+
+  searchExercises: (q: string, muscleGroup?: string) =>
+    request<{ exercises: Exercise[] }>(
+      `/api/exercises?q=${encodeURIComponent(q)}${muscleGroup ? `&muscle_group=${encodeURIComponent(muscleGroup)}` : ""}`
+    ),
+  addExerciseToCatalog: (exercise: NewExercise) =>
+    request<Exercise>("/api/exercises", { method: "POST", body: JSON.stringify(exercise) }),
 };

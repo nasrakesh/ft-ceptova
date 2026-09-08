@@ -514,15 +514,83 @@ app.delete("/api/entries/:id", requireAuth, async (c) => {
   return c.json({ ok: true });
 });
 
-// ---------- Exercise ----------
+// ---------- Exercise catalog ----------
+
+app.get("/api/exercises", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const q = (c.req.query("q") || "").trim();
+  const muscleGroup = c.req.query("muscle_group");
+
+  let query =
+    "SELECT id, name, muscle_group, unit_label, avg_calories, is_global FROM exercises WHERE (is_global = 1 OR user_id = ?)";
+  const params: (string | number)[] = [userId];
+
+  if (muscleGroup) {
+    query += " AND muscle_group = ?";
+    params.push(muscleGroup);
+  }
+  if (q) {
+    query += " AND name LIKE ? ESCAPE '\\'";
+    const escaped = q.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+    params.push(`%${escaped}%`);
+  }
+  query += " ORDER BY is_global DESC, name ASC LIMIT 50";
+
+  const { results } = await c.env.DB.prepare(query)
+    .bind(...params)
+    .all();
+  return c.json({ exercises: results });
+});
+
+app.post("/api/exercises", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const body = await readJson<{
+    name?: string;
+    muscle_group?: string;
+    unit_label?: string;
+    avg_calories?: number;
+  }>(c);
+
+  const name = body.name?.trim();
+  const muscleGroup = body.muscle_group?.trim();
+  const unitLabel = body.unit_label?.trim();
+  const avgCalories = body.avg_calories;
+
+  if (!name) return c.json({ error: "Name is required" }, 400);
+  if (!muscleGroup) return c.json({ error: "Muscle group is required" }, 400);
+  if (!unitLabel) return c.json({ error: "Unit is required (e.g. '3 sets')" }, 400);
+  if (!isFiniteNonNegative(avgCalories)) {
+    return c.json({ error: "Average calories must be a non-negative number" }, 400);
+  }
+
+  const result = await c.env.DB.prepare(
+    `INSERT INTO exercises (name, muscle_group, unit_label, avg_calories, is_global, user_id)
+     VALUES (?, ?, ?, ?, 0, ?)`
+  )
+    .bind(name, muscleGroup, unitLabel, avgCalories, userId)
+    .run();
+
+  const exercise = await c.env.DB.prepare(
+    "SELECT id, name, muscle_group, unit_label, avg_calories, is_global FROM exercises WHERE id = ?"
+  )
+    .bind(result.meta.last_row_id)
+    .first();
+
+  return c.json(exercise, 201);
+});
+
+// ---------- Exercise log ----------
 
 app.get("/api/exercise", requireAuth, async (c) => {
   const userId = c.get("userId");
   const date = c.req.query("date") || todayIso();
 
   const { results } = await c.env.DB.prepare(
-    `SELECT id, date, calories, note, created_at
-     FROM exercise_entries WHERE user_id = ? AND date = ? ORDER BY created_at ASC`
+    `SELECT ee.id, ee.exercise_id, ee.note, ee.quantity, ee.calories, ee.created_at, ex.muscle_group
+     FROM exercise_entries ee
+     LEFT JOIN exercises ex ON ee.exercise_id = ex.id
+     WHERE ee.user_id = ? AND ee.date = ?
+     ORDER BY ee.created_at ASC`
   )
     .bind(userId, date)
     .all();
@@ -534,26 +602,58 @@ app.get("/api/exercise", requireAuth, async (c) => {
 
 app.post("/api/exercise", requireAuth, async (c) => {
   const userId = c.get("userId");
-  const body = await readJson<{ date?: string; calories?: number; note?: string }>(c);
+  const body = await readJson<{
+    date?: string;
+    exercise_id?: number;
+    quantity?: number;
+    calories?: number;
+    note?: string;
+  }>(c);
   const date = body.date || todayIso();
-  const calories = body.calories;
-  const note = body.note?.trim() || null;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return c.json({ error: "Date must be in YYYY-MM-DD format" }, 400);
   }
-  if (!isFiniteNonNegative(calories)) {
-    return c.json({ error: "Calories must be a non-negative number" }, 400);
+
+  let exerciseId: number | null = null;
+  let quantity = 1;
+  let calories: number;
+  let note: string | null;
+
+  if (typeof body.exercise_id === "number") {
+    quantity = body.quantity ?? 1;
+    if (!isFiniteNonNegative(quantity) || quantity <= 0) {
+      return c.json({ error: "Quantity must be a positive number" }, 400);
+    }
+    const exercise = await c.env.DB.prepare(
+      "SELECT id, name, avg_calories FROM exercises WHERE id = ? AND (is_global = 1 OR user_id = ?)"
+    )
+      .bind(body.exercise_id, userId)
+      .first<{ id: number; name: string; avg_calories: number }>();
+    if (!exercise) return c.json({ error: "Exercise not found" }, 404);
+
+    exerciseId = exercise.id;
+    calories = exercise.avg_calories * quantity;
+    note = exercise.name;
+  } else {
+    calories = body.calories as number;
+    if (!isFiniteNonNegative(calories)) {
+      return c.json({ error: "Calories must be a non-negative number" }, 400);
+    }
+    note = body.note?.trim() || null;
   }
 
   const result = await c.env.DB.prepare(
-    "INSERT INTO exercise_entries (user_id, date, calories, note) VALUES (?, ?, ?, ?)"
+    "INSERT INTO exercise_entries (user_id, date, calories, note, exercise_id, quantity) VALUES (?, ?, ?, ?, ?, ?)"
   )
-    .bind(userId, date, calories, note)
+    .bind(userId, date, calories, note, exerciseId, quantity)
     .run();
 
   const entry = await c.env.DB.prepare(
-    "SELECT id, date, calories, note, created_at FROM exercise_entries WHERE id = ?"
+    `SELECT ee.id, ee.exercise_id, ee.note, ee.quantity, ee.calories, ee.created_at, ex.muscle_group
+     FROM exercise_entries ee
+     LEFT JOIN exercises ex ON ee.exercise_id = ex.id
+     WHERE ee.id = ?`
   )
     .bind(result.meta.last_row_id)
     .first();

@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { api, type User } from "./api";
 import Auth from "./pages/Auth";
 import DailyLog from "./pages/DailyLog";
+import ExercisePage from "./pages/Exercise";
 import Settings from "./pages/Settings";
 import Insights from "./components/Insights";
-import { LogIcon, SettingsIcon, ChartIcon } from "./icons";
+import { LogIcon, SettingsIcon, ChartIcon, DumbbellIcon } from "./icons";
 
-type Tab = "log" | "insights" | "settings";
+type Tab = "log" | "exercise" | "insights" | "settings";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -54,6 +55,7 @@ export default function App() {
 
       <div className="app-body">
         {tab === "log" && <DailyLog />}
+        {tab === "exercise" && <ExercisePage />}
         {tab === "insights" && (
           <div className="settings-screen">
             <Insights />
@@ -70,6 +72,14 @@ export default function App() {
         >
           <LogIcon active={tab === "log"} />
           <span>Log</span>
+        </button>
+        <button
+          type="button"
+          className={tab === "exercise" ? "nav-btn active" : "nav-btn"}
+          onClick={() => switchTab("exercise")}
+        >
+          <DumbbellIcon size={20} />
+          <span>Exercise</span>
         </button>
         <button
           type="button"

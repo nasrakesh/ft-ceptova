@@ -11,7 +11,15 @@
     "db:seed:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0002_seed_foods.sql",
     "db:seed:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0002_seed_foods.sql",
     "db:seed2:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0003_seed_more_foods.sql",
-    "db:seed2:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0003_seed_more_foods.sql"
+    "db:seed2:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0003_seed_more_foods.sql",
+    "db:migrate4:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0004_add_profile.sql",
+    "db:migrate4:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0004_add_profile.sql",
+    "db:migrate5:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0005_add_exercise.sql",
+    "db:migrate5:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0005_add_exercise.sql",
+    "db:migrate6:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0006_add_exercises_catalog.sql",
+    "db:migrate6:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0006_add_exercises_catalog.sql",
+    "db:seed3:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0007_seed_exercises.sql",
+    "db:seed3:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0007_seed_exercises.sql"
   },
   "dependencies": {
     "hono": "^4.6.9",

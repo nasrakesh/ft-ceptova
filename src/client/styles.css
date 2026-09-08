@@ -13,6 +13,10 @@
   --series-2: #eb6834; /* orange: carbs */
   --series-3: #1baf7a; /* aqua: fiber */
   --series-4: #eda100; /* yellow: fat */
+  --series-5: #e87ba4; /* magenta */
+  --series-6: #008300; /* green */
+  --series-7: #4a3aa7; /* violet */
+  --series-8: #e34948; /* red */
 
   /* Sequential (magnitude) */
   --seq-100: #cde2fb;
