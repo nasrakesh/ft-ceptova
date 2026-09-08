@@ -1,0 +1,16 @@
+name = "ft-ceptova"
+main = "src/worker/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ft-ceptova-db"
+# Placeholder for local dev. Run `wrangler d1 create ft-ceptova-db` and paste
+# the real database_id here before deploying / running against the remote DB.
+database_id = "00000000-0000-0000-0000-000000000000"
