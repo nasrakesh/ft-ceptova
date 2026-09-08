@@ -514,6 +514,69 @@ app.delete("/api/entries/:id", requireAuth, async (c) => {
   return c.json({ ok: true });
 });
 
+// ---------- Exercise ----------
+
+app.get("/api/exercise", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const date = c.req.query("date") || todayIso();
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, date, calories, note, created_at
+     FROM exercise_entries WHERE user_id = ? AND date = ? ORDER BY created_at ASC`
+  )
+    .bind(userId, date)
+    .all();
+
+  const entries = results as Array<{ calories: number }>;
+  const totalCalories = entries.reduce((sum, e) => sum + e.calories, 0);
+  return c.json({ date, entries: results, totalCalories });
+});
+
+app.post("/api/exercise", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const body = await readJson<{ date?: string; calories?: number; note?: string }>(c);
+  const date = body.date || todayIso();
+  const calories = body.calories;
+  const note = body.note?.trim() || null;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return c.json({ error: "Date must be in YYYY-MM-DD format" }, 400);
+  }
+  if (!isFiniteNonNegative(calories)) {
+    return c.json({ error: "Calories must be a non-negative number" }, 400);
+  }
+
+  const result = await c.env.DB.prepare(
+    "INSERT INTO exercise_entries (user_id, date, calories, note) VALUES (?, ?, ?, ?)"
+  )
+    .bind(userId, date, calories, note)
+    .run();
+
+  const entry = await c.env.DB.prepare(
+    "SELECT id, date, calories, note, created_at FROM exercise_entries WHERE id = ?"
+  )
+    .bind(result.meta.last_row_id)
+    .first();
+
+  return c.json(entry, 201);
+});
+
+app.delete("/api/exercise/:id", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const id = c.req.param("id");
+
+  const result = await c.env.DB.prepare(
+    "DELETE FROM exercise_entries WHERE id = ? AND user_id = ?"
+  )
+    .bind(id, userId)
+    .run();
+
+  if (result.meta.changes === 0) {
+    return c.json({ error: "Entry not found" }, 404);
+  }
+  return c.json({ ok: true });
+});
+
 // ---------- Goals ----------
 
 app.get("/api/goals", requireAuth, async (c) => {

@@ -162,6 +162,63 @@ input {
   padding: 8px;
 }
 
+.week-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.week-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 0;
+  color: var(--text);
+}
+
+.week-day-letter {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.week-day-num {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.week-day.is-today {
+  border-color: var(--accent);
+}
+
+.week-day.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.week-day.active .week-day-letter,
+.week-day.active .week-day-num {
+  color: var(--accent-text);
+}
+
+.budget-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.net-note {
+  text-align: center;
+  margin: -6px 0 0;
+  font-size: 0.8rem;
+}
+
 .date-nav button {
   width: 44px;
   height: 44px;
@@ -852,35 +909,6 @@ input {
   gap: 14px;
 }
 
-/* Goal view toggle */
-
-.goal-view-toggle {
-  display: flex;
-  gap: 6px;
-}
-
-.seg-btn {
-  flex: 1;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  border-radius: 8px;
-  padding: 8px 0;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.seg-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
-  font-weight: 600;
-}
-
-.monthly-goal-view {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 
 /* Body plan */
 

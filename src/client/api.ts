@@ -121,6 +121,20 @@ export interface InsightsDay {
   fiber: number;
 }
 
+export interface ExerciseEntry {
+  id: number;
+  date: string;
+  calories: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface ExerciseResponse {
+  date: string;
+  entries: ExerciseEntry[];
+  totalCalories: number;
+}
+
 export interface Insights {
   month: string;
   daysInMonth: number;
@@ -186,4 +200,13 @@ export const api = {
   ) => request<Profile>("/api/profile", { method: "PUT", body: JSON.stringify(profile) }),
 
   insights: (month: string) => request<Insights>(`/api/insights?month=${month}`),
+
+  exercise: (date: string) => request<ExerciseResponse>(`/api/exercise?date=${date}`),
+  addExercise: (date: string, calories: number, note?: string) =>
+    request<ExerciseEntry>("/api/exercise", {
+      method: "POST",
+      body: JSON.stringify({ date, calories, note }),
+    }),
+  deleteExercise: (id: number) =>
+    request<{ ok: true }>(`/api/exercise/${id}`, { method: "DELETE" }),
 };

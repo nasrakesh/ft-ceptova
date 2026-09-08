@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { api, type Category, type Goals } from "../api";
 import CollapsibleSection from "../components/CollapsibleSection";
 import BodyPlan from "../components/BodyPlan";
-import Insights from "../components/Insights";
-import { TargetIcon, UtensilsIcon, ScaleIcon, ChartIcon } from "../icons";
+import { TargetIcon, UtensilsIcon, ScaleIcon } from "../icons";
 
 const GOAL_FIELDS: { key: keyof Goals; label: string; colorVar: string }[] = [
   { key: "calories", label: "Calories (kcal)", colorVar: "" },
@@ -13,10 +12,6 @@ const GOAL_FIELDS: { key: keyof Goals; label: string; colorVar: string }[] = [
   { key: "fat", label: "Fat (g)", colorVar: "--series-4" },
 ];
 
-function daysInMonth(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-}
-
 export default function Settings() {
   const [goals, setGoals] = useState<Record<keyof Goals, string>>({
     calories: "",
@@ -25,7 +20,6 @@ export default function Settings() {
     fat: "",
     fiber: "",
   });
-  const [goalView, setGoalView] = useState<"daily" | "monthly">("daily");
   const [goalsSaved, setGoalsSaved] = useState(false);
   const [goalsBusy, setGoalsBusy] = useState(false);
   const [goalsError, setGoalsError] = useState<string | null>(null);
@@ -120,71 +114,34 @@ export default function Settings() {
     }
   }
 
-  const multiplier = goalView === "monthly" ? daysInMonth(new Date()) : 1;
-
   return (
     <div className="settings-screen">
-      <CollapsibleSection title="Goals" icon={<TargetIcon size={18} />} accentColor="var(--series-1)">
-        <div className="goal-view-toggle">
-          <button
-            type="button"
-            className={goalView === "daily" ? "seg-btn active" : "seg-btn"}
-            onClick={() => setGoalView("daily")}
-          >
-            Daily
+      <CollapsibleSection title="Goals" icon={<TargetIcon size={18} />} accentColor="var(--series-1)" defaultOpen={false}>
+        <form className="goals-form" onSubmit={saveGoals}>
+          {GOAL_FIELDS.map(({ key, label, colorVar }) => (
+            <label key={key}>
+              {colorVar && <span className="color-dot" style={{ background: `var(${colorVar})` }} />}
+              {label}
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={goals[key]}
+                onChange={(e) => {
+                  setGoals((g) => ({ ...g, [key]: e.target.value }));
+                  setGoalsSaved(false);
+                }}
+              />
+            </label>
+          ))}
+          {goalsError && <p className="error">{goalsError}</p>}
+          <button type="submit" className="btn-primary" disabled={goalsBusy}>
+            {goalsBusy ? "Saving…" : goalsSaved ? "Saved ✓" : "Save goals"}
           </button>
-          <button
-            type="button"
-            className={goalView === "monthly" ? "seg-btn active" : "seg-btn"}
-            onClick={() => setGoalView("monthly")}
-          >
-            Monthly
-          </button>
-        </div>
-
-        {goalView === "daily" ? (
-          <form className="goals-form" onSubmit={saveGoals}>
-            {GOAL_FIELDS.map(({ key, label, colorVar }) => (
-              <label key={key}>
-                {colorVar && <span className="color-dot" style={{ background: `var(${colorVar})` }} />}
-                {label}
-                <input
-                  type="number"
-                  min={0}
-                  step="any"
-                  value={goals[key]}
-                  onChange={(e) => {
-                    setGoals((g) => ({ ...g, [key]: e.target.value }));
-                    setGoalsSaved(false);
-                  }}
-                />
-              </label>
-            ))}
-            {goalsError && <p className="error">{goalsError}</p>}
-            <button type="submit" className="btn-primary" disabled={goalsBusy}>
-              {goalsBusy ? "Saving…" : goalsSaved ? "Saved ✓" : "Save goals"}
-            </button>
-          </form>
-        ) : (
-          <div className="monthly-goal-view">
-            <p className="muted">This month has {multiplier} days — targets scaled accordingly:</p>
-            {GOAL_FIELDS.map(({ key, label, colorVar }) => {
-              const val = goals[key] ? Number(goals[key]) : null;
-              return (
-                <div key={key} className="goal-row">
-                  <span className="goal-label">
-                    {colorVar && <span className="color-dot" style={{ background: `var(${colorVar})` }} />}
-                    {label.replace(/\s*\(.*\)/, "")}
-                  </span>
-                  <span className="goal-value">{val != null ? Math.round(val * multiplier).toLocaleString() : "—"}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        </form>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Categories" icon={<UtensilsIcon size={18} />} accentColor="var(--muted)">
+      <CollapsibleSection title="Categories" icon={<UtensilsIcon size={18} />} accentColor="var(--muted)" defaultOpen={false}>
         {catError && <p className="error">{catError}</p>}
         <ul className="category-manage-list">
           {categories.map((category, index) => (
@@ -255,10 +212,6 @@ export default function Settings() {
 
       <CollapsibleSection title="Body & Weight Plan" icon={<ScaleIcon size={18} />} accentColor="var(--status-serious)" defaultOpen={false}>
         <BodyPlan />
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Insights" icon={<ChartIcon size={18} />} accentColor="var(--series-1)" defaultOpen={false}>
-        <Insights />
       </CollapsibleSection>
     </div>
   );

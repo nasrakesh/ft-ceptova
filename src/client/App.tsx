@@ -3,14 +3,17 @@ import { api, type User } from "./api";
 import Auth from "./pages/Auth";
 import DailyLog from "./pages/DailyLog";
 import Settings from "./pages/Settings";
-import { LogIcon, SettingsIcon } from "./icons";
+import Insights from "./components/Insights";
+import { LogIcon, SettingsIcon, ChartIcon } from "./icons";
+
+type Tab = "log" | "insights" | "settings";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
-  const [tab, setTab] = useState<"log" | "settings">("log");
+  const [tab, setTab] = useState<Tab>("log");
 
-  function switchTab(next: "log" | "settings") {
+  function switchTab(next: Tab) {
     setTab(next);
     document.querySelector(".app-body")?.scrollTo(0, 0);
   }
@@ -50,7 +53,13 @@ export default function App() {
       </header>
 
       <div className="app-body">
-        {tab === "log" ? <DailyLog /> : <Settings />}
+        {tab === "log" && <DailyLog />}
+        {tab === "insights" && (
+          <div className="settings-screen">
+            <Insights />
+          </div>
+        )}
+        {tab === "settings" && <Settings />}
       </div>
 
       <nav className="bottom-nav">
@@ -61,6 +70,14 @@ export default function App() {
         >
           <LogIcon active={tab === "log"} />
           <span>Log</span>
+        </button>
+        <button
+          type="button"
+          className={tab === "insights" ? "nav-btn active" : "nav-btn"}
+          onClick={() => switchTab("insights")}
+        >
+          <ChartIcon size={20} />
+          <span>Insights</span>
         </button>
         <button
           type="button"
