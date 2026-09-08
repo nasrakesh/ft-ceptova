@@ -2,6 +2,7 @@ import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import type { Env, Variables } from "./types";
 import { createSessionToken, hashPassword, verifyPassword, verifySessionToken } from "./auth";
+import { computePlan, type ActivityLevel, type GoalType, type Profile, type Sex } from "./plan";
 
 type AppEnv = { Bindings: Env; Variables: Variables };
 
@@ -557,6 +558,194 @@ app.put("/api/goals", requireAuth, async (c) => {
     .run();
 
   return c.json({ ok: true });
+});
+
+// ---------- Profile, BMI & weight plan ----------
+
+const SEX_VALUES: Sex[] = ["male", "female"];
+const ACTIVITY_VALUES: ActivityLevel[] = ["sedentary", "light", "moderate", "active", "very_active"];
+const GOAL_TYPE_VALUES: GoalType[] = ["lose", "maintain", "gain"];
+
+async function fetchProfile(env: Env, userId: number): Promise<Profile> {
+  const row = await env.DB.prepare(
+    `SELECT height_cm, current_weight_kg, target_weight_kg, age, sex, activity_level, goal_type, target_weeks
+     FROM profiles WHERE user_id = ?`
+  )
+    .bind(userId)
+    .first<Profile>();
+  return (
+    row ?? {
+      height_cm: null,
+      current_weight_kg: null,
+      target_weight_kg: null,
+      age: null,
+      sex: null,
+      activity_level: null,
+      goal_type: null,
+      target_weeks: null,
+    }
+  );
+}
+
+app.get("/api/profile", requireAuth, async (c) => {
+  const profile = await fetchProfile(c.env, c.get("userId"));
+  return c.json({ ...profile, plan: computePlan(profile) });
+});
+
+app.put("/api/profile", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const body = await readJson<{
+    height_cm?: number | null;
+    current_weight_kg?: number | null;
+    target_weight_kg?: number | null;
+    age?: number | null;
+    sex?: Sex | null;
+    activity_level?: ActivityLevel | null;
+    goal_type?: GoalType | null;
+    target_weeks?: number | null;
+  }>(c);
+
+  function numOrNull(v: unknown, label: string): number | null {
+    if (v === null || v === undefined) return null;
+    if (!isFiniteNonNegative(v)) throw new Error(`${label} must be a non-negative number or null`);
+    return v;
+  }
+
+  let profile: Profile;
+  try {
+    profile = {
+      height_cm: numOrNull(body.height_cm, "Height"),
+      current_weight_kg: numOrNull(body.current_weight_kg, "Current weight"),
+      target_weight_kg: numOrNull(body.target_weight_kg, "Target weight"),
+      age: numOrNull(body.age, "Age"),
+      sex: body.sex == null ? null : body.sex,
+      activity_level: body.activity_level == null ? null : body.activity_level,
+      goal_type: body.goal_type == null ? null : body.goal_type,
+      target_weeks: numOrNull(body.target_weeks, "Target weeks"),
+    };
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "Invalid input" }, 400);
+  }
+
+  if (profile.sex != null && !SEX_VALUES.includes(profile.sex)) {
+    return c.json({ error: "sex must be 'male' or 'female'" }, 400);
+  }
+  if (profile.activity_level != null && !ACTIVITY_VALUES.includes(profile.activity_level)) {
+    return c.json({ error: "Invalid activity_level" }, 400);
+  }
+  if (profile.goal_type != null && !GOAL_TYPE_VALUES.includes(profile.goal_type)) {
+    return c.json({ error: "goal_type must be 'lose', 'maintain', or 'gain'" }, 400);
+  }
+
+  await c.env.DB.prepare(
+    `INSERT INTO profiles
+       (user_id, height_cm, current_weight_kg, target_weight_kg, age, sex, activity_level, goal_type, target_weeks, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(user_id) DO UPDATE SET
+       height_cm = excluded.height_cm,
+       current_weight_kg = excluded.current_weight_kg,
+       target_weight_kg = excluded.target_weight_kg,
+       age = excluded.age,
+       sex = excluded.sex,
+       activity_level = excluded.activity_level,
+       goal_type = excluded.goal_type,
+       target_weeks = excluded.target_weeks,
+       updated_at = datetime('now')`
+  )
+    .bind(
+      userId,
+      profile.height_cm,
+      profile.current_weight_kg,
+      profile.target_weight_kg,
+      profile.age,
+      profile.sex,
+      profile.activity_level,
+      profile.goal_type,
+      profile.target_weeks
+    )
+    .run();
+
+  return c.json({ ...profile, plan: computePlan(profile) });
+});
+
+// ---------- Insights ----------
+
+app.get("/api/insights", requireAuth, async (c) => {
+  const userId = c.get("userId");
+  const month = c.req.query("month") || todayIso().slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) {
+    return c.json({ error: "month must be in YYYY-MM format" }, 400);
+  }
+
+  const [year, mon] = month.split("-").map(Number);
+  const daysInMonth = new Date(year, mon, 0).getDate();
+  const startDate = `${month}-01`;
+  const endDate = `${month}-${String(daysInMonth).padStart(2, "0")}`;
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT date,
+            SUM(calories) AS calories,
+            SUM(protein) AS protein,
+            SUM(carbs) AS carbs,
+            SUM(fat) AS fat,
+            SUM(fiber) AS fiber
+     FROM food_entries
+     WHERE user_id = ? AND date >= ? AND date <= ?
+     GROUP BY date
+     ORDER BY date ASC`
+  )
+    .bind(userId, startDate, endDate)
+    .all();
+
+  const days = results as Array<{
+    date: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  }>;
+
+  const daysLogged = days.length;
+  const totals = days.reduce(
+    (acc, d) => ({
+      calories: acc.calories + d.calories,
+      protein: acc.protein + d.protein,
+      carbs: acc.carbs + d.carbs,
+      fat: acc.fat + d.fat,
+      fiber: acc.fiber + d.fiber,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+  );
+  const averages =
+    daysLogged > 0
+      ? {
+          calories: totals.calories / daysLogged,
+          protein: totals.protein / daysLogged,
+          carbs: totals.carbs / daysLogged,
+          fat: totals.fat / daysLogged,
+          fiber: totals.fiber / daysLogged,
+        }
+      : { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+
+  const goals = await c.env.DB.prepare(
+    "SELECT calories, protein, carbs, fat, fiber FROM goals WHERE user_id = ?"
+  )
+    .bind(userId)
+    .first();
+
+  const profile = await fetchProfile(c.env, userId);
+
+  return c.json({
+    month,
+    daysInMonth,
+    days,
+    daysLogged,
+    totals,
+    averages,
+    goals: goals ?? { calories: null, protein: null, carbs: null, fat: null, fiber: null },
+    plan: computePlan(profile),
+  });
 });
 
 app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));

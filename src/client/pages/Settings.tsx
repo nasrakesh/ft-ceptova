@@ -1,13 +1,21 @@
 import { useEffect, useState } from "react";
 import { api, type Category, type Goals } from "../api";
+import CollapsibleSection from "../components/CollapsibleSection";
+import BodyPlan from "../components/BodyPlan";
+import Insights from "../components/Insights";
+import { TargetIcon, UtensilsIcon, ScaleIcon, ChartIcon } from "../icons";
 
-const GOAL_FIELDS: { key: keyof Goals; label: string }[] = [
-  { key: "calories", label: "Calories (kcal)" },
-  { key: "protein", label: "Protein (g)" },
-  { key: "carbs", label: "Carbs (g)" },
-  { key: "fat", label: "Fat (g)" },
-  { key: "fiber", label: "Fiber (g)" },
+const GOAL_FIELDS: { key: keyof Goals; label: string; colorVar: string }[] = [
+  { key: "calories", label: "Calories (kcal)", colorVar: "" },
+  { key: "protein", label: "Protein (g)", colorVar: "--series-1" },
+  { key: "carbs", label: "Carbs (g)", colorVar: "--series-2" },
+  { key: "fiber", label: "Fiber (g)", colorVar: "--series-3" },
+  { key: "fat", label: "Fat (g)", colorVar: "--series-4" },
 ];
+
+function daysInMonth(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
 
 export default function Settings() {
   const [goals, setGoals] = useState<Record<keyof Goals, string>>({
@@ -17,6 +25,7 @@ export default function Settings() {
     fat: "",
     fiber: "",
   });
+  const [goalView, setGoalView] = useState<"daily" | "monthly">("daily");
   const [goalsSaved, setGoalsSaved] = useState(false);
   const [goalsBusy, setGoalsBusy] = useState(false);
   const [goalsError, setGoalsError] = useState<string | null>(null);
@@ -111,98 +120,146 @@ export default function Settings() {
     }
   }
 
+  const multiplier = goalView === "monthly" ? daysInMonth(new Date()) : 1;
+
   return (
     <div className="settings-screen">
-      <h2>Daily goals</h2>
-      <form className="goals-form" onSubmit={saveGoals}>
-        {GOAL_FIELDS.map(({ key, label }) => (
-          <label key={key}>
-            {label}
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={goals[key]}
-              onChange={(e) => {
-                setGoals((g) => ({ ...g, [key]: e.target.value }));
-                setGoalsSaved(false);
-              }}
-            />
-          </label>
-        ))}
-        {goalsError && <p className="error">{goalsError}</p>}
-        <button type="submit" className="btn-primary" disabled={goalsBusy}>
-          {goalsBusy ? "Saving…" : goalsSaved ? "Saved ✓" : "Save goals"}
-        </button>
-      </form>
+      <CollapsibleSection title="Goals" icon={<TargetIcon size={18} />} accentColor="var(--series-1)">
+        <div className="goal-view-toggle">
+          <button
+            type="button"
+            className={goalView === "daily" ? "seg-btn active" : "seg-btn"}
+            onClick={() => setGoalView("daily")}
+          >
+            Daily
+          </button>
+          <button
+            type="button"
+            className={goalView === "monthly" ? "seg-btn active" : "seg-btn"}
+            onClick={() => setGoalView("monthly")}
+          >
+            Monthly
+          </button>
+        </div>
 
-      <h2>Categories</h2>
-      {catError && <p className="error">{catError}</p>}
-      <ul className="category-manage-list">
-        {categories.map((category, index) => (
-          <li key={category.id} className="category-manage-row">
-            <div className="reorder-btns">
-              <button
-                type="button"
-                aria-label="Move up"
-                disabled={index === 0}
-                onClick={() => move(index, -1)}
-              >
-                ▲
-              </button>
-              <button
-                type="button"
-                aria-label="Move down"
-                disabled={index === categories.length - 1}
-                onClick={() => move(index, 1)}
-              >
-                ▼
-              </button>
-            </div>
-            <input
-              type="text"
-              value={category.name}
-              onChange={(e) =>
-                setCategories((cats) =>
-                  cats.map((c) => (c.id === category.id ? { ...c, name: e.target.value } : c))
-                )
-              }
-              onBlur={(e) => renameCategory(category.id, e.target.value)}
-            />
-            {confirmDeleteId === category.id ? (
-              <span className="confirm-delete">
-                <span>Delete?</span>
-                <button type="button" className="danger-btn" onClick={() => deleteCategory(category.id)}>
-                  Yes
+        {goalView === "daily" ? (
+          <form className="goals-form" onSubmit={saveGoals}>
+            {GOAL_FIELDS.map(({ key, label, colorVar }) => (
+              <label key={key}>
+                {colorVar && <span className="color-dot" style={{ background: `var(${colorVar})` }} />}
+                {label}
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={goals[key]}
+                  onChange={(e) => {
+                    setGoals((g) => ({ ...g, [key]: e.target.value }));
+                    setGoalsSaved(false);
+                  }}
+                />
+              </label>
+            ))}
+            {goalsError && <p className="error">{goalsError}</p>}
+            <button type="submit" className="btn-primary" disabled={goalsBusy}>
+              {goalsBusy ? "Saving…" : goalsSaved ? "Saved ✓" : "Save goals"}
+            </button>
+          </form>
+        ) : (
+          <div className="monthly-goal-view">
+            <p className="muted">This month has {multiplier} days — targets scaled accordingly:</p>
+            {GOAL_FIELDS.map(({ key, label, colorVar }) => {
+              const val = goals[key] ? Number(goals[key]) : null;
+              return (
+                <div key={key} className="goal-row">
+                  <span className="goal-label">
+                    {colorVar && <span className="color-dot" style={{ background: `var(${colorVar})` }} />}
+                    {label.replace(/\s*\(.*\)/, "")}
+                  </span>
+                  <span className="goal-value">{val != null ? Math.round(val * multiplier).toLocaleString() : "—"}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Categories" icon={<UtensilsIcon size={18} />} accentColor="var(--muted)">
+        {catError && <p className="error">{catError}</p>}
+        <ul className="category-manage-list">
+          {categories.map((category, index) => (
+            <li key={category.id} className="category-manage-row">
+              <div className="reorder-btns">
+                <button
+                  type="button"
+                  aria-label="Move up"
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                >
+                  ▲
                 </button>
-                <button type="button" className="link-btn" onClick={() => setConfirmDeleteId(null)}>
-                  No
+                <button
+                  type="button"
+                  aria-label="Move down"
+                  disabled={index === categories.length - 1}
+                  onClick={() => move(index, 1)}
+                >
+                  ▼
                 </button>
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="delete-btn"
-                aria-label={`Delete ${category.name}`}
-                onClick={() => setConfirmDeleteId(category.id)}
-              >
-                ✕
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
-      <form className="add-category-form" onSubmit={addCategory}>
-        <input
-          type="text"
-          placeholder="New category name"
-          value={newCategoryName}
-          onChange={(e) => setNewCategoryName(e.target.value)}
-        />
-        <button type="submit" className="btn-primary">
-          Add
-        </button>
-      </form>
+              </div>
+              <input
+                type="text"
+                value={category.name}
+                onChange={(e) =>
+                  setCategories((cats) =>
+                    cats.map((c) => (c.id === category.id ? { ...c, name: e.target.value } : c))
+                  )
+                }
+                onBlur={(e) => renameCategory(category.id, e.target.value)}
+              />
+              {confirmDeleteId === category.id ? (
+                <span className="confirm-delete">
+                  <span>Delete?</span>
+                  <button type="button" className="danger-btn" onClick={() => deleteCategory(category.id)}>
+                    Yes
+                  </button>
+                  <button type="button" className="link-btn" onClick={() => setConfirmDeleteId(null)}>
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="delete-btn"
+                  aria-label={`Delete ${category.name}`}
+                  onClick={() => setConfirmDeleteId(category.id)}
+                >
+                  ✕
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <form className="add-category-form" onSubmit={addCategory}>
+          <input
+            type="text"
+            placeholder="New category name"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+          />
+          <button type="submit" className="btn-primary">
+            Add
+          </button>
+        </form>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Body & Weight Plan" icon={<ScaleIcon size={18} />} accentColor="var(--status-serious)" defaultOpen={false}>
+        <BodyPlan />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Insights" icon={<ChartIcon size={18} />} accentColor="var(--series-1)" defaultOpen={false}>
+        <Insights />
+      </CollapsibleSection>
     </div>
   );
 }

@@ -81,6 +81,57 @@ export type Goals = {
   fiber: number | null;
 };
 
+export type Sex = "male" | "female";
+export type ActivityLevel = "sedentary" | "light" | "moderate" | "active" | "very_active";
+export type GoalType = "lose" | "maintain" | "gain";
+
+export interface Plan {
+  bmi: number | null;
+  bmiCategory: string | null;
+  bmr: number | null;
+  tdee: number | null;
+  recommendedCalories: number | null;
+  recommendedProtein: number | null;
+  recommendedCarbs: number | null;
+  recommendedFat: number | null;
+  recommendedFiber: number | null;
+  weeklyRateKg: number | null;
+  calorieFloorApplied: boolean;
+  estimatedWeeksToGoal: number | null;
+}
+
+export interface Profile {
+  height_cm: number | null;
+  current_weight_kg: number | null;
+  target_weight_kg: number | null;
+  age: number | null;
+  sex: Sex | null;
+  activity_level: ActivityLevel | null;
+  goal_type: GoalType | null;
+  target_weeks: number | null;
+  plan: Plan;
+}
+
+export interface InsightsDay {
+  date: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+export interface Insights {
+  month: string;
+  daysInMonth: number;
+  days: InsightsDay[];
+  daysLogged: number;
+  totals: Totals;
+  averages: Totals;
+  goals: Goals;
+  plan: Plan;
+}
+
 export const api = {
   me: () => request<User>("/api/auth/me"),
   signup: (email: string, password: string) =>
@@ -128,4 +179,11 @@ export const api = {
   goals: () => request<Goals>("/api/goals"),
   saveGoals: (goals: Goals) =>
     request<{ ok: true }>("/api/goals", { method: "PUT", body: JSON.stringify(goals) }),
+
+  profile: () => request<Profile>("/api/profile"),
+  saveProfile: (
+    profile: Omit<Profile, "plan">
+  ) => request<Profile>("/api/profile", { method: "PUT", body: JSON.stringify(profile) }),
+
+  insights: (month: string) => request<Insights>(`/api/insights?month=${month}`),
 };

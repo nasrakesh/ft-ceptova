@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type Category, type Entry, type Goals, type Totals } from "../api";
 import LogFoodPanel from "../components/LogFoodPanel";
+import { categoryIconFor } from "../icons";
 
 function todayIso(): string {
   const d = new Date();
@@ -37,18 +38,33 @@ function round1(n: number): number {
 function MacroChips({ totals }: { totals: Totals }) {
   return (
     <span className="macro-chips">
-      <span>P {round1(totals.protein)}g</span>
-      <span>C {round1(totals.carbs)}g</span>
-      <span>F {round1(totals.fat)}g</span>
-      <span>Fbr {round1(totals.fiber)}g</span>
+      <span className="chip chip-protein">P {round1(totals.protein)}g</span>
+      <span className="chip chip-carbs">C {round1(totals.carbs)}g</span>
+      <span className="chip chip-fiber">Fbr {round1(totals.fiber)}g</span>
+      <span className="chip chip-fat">F {round1(totals.fat)}g</span>
     </span>
   );
 }
 
-function GoalRow({ label, value, goal, unit }: { label: string; value: number; goal: number | null; unit: string }) {
+function GoalRow({
+  label,
+  value,
+  goal,
+  unit,
+  dotColor,
+}: {
+  label: string;
+  value: number;
+  goal: number | null;
+  unit: string;
+  dotColor: string;
+}) {
   return (
     <div className="goal-row">
-      <span className="goal-label">{label}</span>
+      <span className="goal-label">
+        <span className="color-dot" style={{ background: dotColor }} />
+        {label}
+      </span>
       <span className="goal-value">
         {Math.round(value)}
         {unit}
@@ -245,10 +261,10 @@ export default function DailyLog() {
           </span>
         </div>
         <div className="goal-grid">
-          <GoalRow label="Protein" value={totals.protein} goal={goals?.protein ?? null} unit="g" />
-          <GoalRow label="Carbs" value={totals.carbs} goal={goals?.carbs ?? null} unit="g" />
-          <GoalRow label="Fat" value={totals.fat} goal={goals?.fat ?? null} unit="g" />
-          <GoalRow label="Fiber" value={totals.fiber} goal={goals?.fiber ?? null} unit="g" />
+          <GoalRow label="Protein" value={totals.protein} goal={goals?.protein ?? null} unit="g" dotColor="var(--series-1)" />
+          <GoalRow label="Carbs" value={totals.carbs} goal={goals?.carbs ?? null} unit="g" dotColor="var(--series-2)" />
+          <GoalRow label="Fiber" value={totals.fiber} goal={goals?.fiber ?? null} unit="g" dotColor="var(--series-3)" />
+          <GoalRow label="Fat" value={totals.fat} goal={goals?.fat ?? null} unit="g" dotColor="var(--series-4)" />
         </div>
       </div>
 
@@ -277,14 +293,18 @@ export default function DailyLog() {
                 { ...EMPTY_TOTALS }
               );
               const isCollapsed = !!collapsed[category.id];
+              const { icon: CatIcon, color: catColor } = categoryIconFor(category.name);
               return (
-                <div key={category.id} className="category-card">
+                <div key={category.id} className="category-card" style={{ borderLeftColor: catColor }}>
                   <button
                     type="button"
                     className="category-header"
                     onClick={() => toggleCollapse(category.id)}
                   >
                     <span className={isCollapsed ? "chevron collapsed" : "chevron"}>▾</span>
+                    <span className="category-icon" style={{ color: catColor }}>
+                      <CatIcon size={18} />
+                    </span>
                     <span className="category-name">{category.name}</span>
                     <span className="category-subtotal">{Math.round(subtotal.calories)} kcal</span>
                   </button>

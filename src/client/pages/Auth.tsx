@@ -24,6 +24,7 @@ export default function Auth({ onAuthed }: { onAuthed: (user: User) => void }) {
 
   return (
     <div className="auth-screen">
+      <span className="auth-logo" aria-hidden="true">🥗</span>
       <h1>Nutrition Tracker</h1>
       <form className="auth-form" onSubmit={submit}>
         <label>
