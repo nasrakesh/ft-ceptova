@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { api, type Category, type Goals, type User } from "../api";
 import CollapsibleSection from "../components/CollapsibleSection";
 import BodyPlan from "../components/BodyPlan";
-import { TargetIcon, UtensilsIcon, ScaleIcon, UserIcon } from "../icons";
+import MyFoods from "../components/MyFoods";
+import { TargetIcon, UtensilsIcon, ScaleIcon, UserIcon, AppleIcon } from "../icons";
 
 const GOAL_FIELDS: { key: keyof Goals; label: string; colorVar: string }[] = [
   { key: "calories", label: "Calories (kcal)", colorVar: "" },
@@ -266,6 +267,10 @@ export default function Settings({
 
       <CollapsibleSection title="Body & Weight Plan" icon={<ScaleIcon size={18} />} accentColor="var(--status-serious)" defaultOpen={false}>
         <BodyPlan />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="My Foods" icon={<AppleIcon size={18} />} accentColor="var(--series-3)" defaultOpen={false}>
+        <MyFoods />
       </CollapsibleSection>
     </div>
   );

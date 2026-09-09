@@ -135,27 +135,22 @@ export const MUSCLE_GROUPS = [
 
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 
+export const ACTIVITY_TYPES = ["Gym", "Cardio", "Walk", "Other"] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
 export interface Exercise {
   id: number;
   name: string;
   muscle_group: string;
   unit_label: string;
-  avg_calories: number;
+  instructions: string | null;
   is_global: number;
-}
-
-export interface NewExercise {
-  name: string;
-  muscle_group: string;
-  unit_label: string;
-  avg_calories: number;
 }
 
 export interface ExerciseEntry {
   id: number;
-  exercise_id: number | null;
-  muscle_group: string | null;
-  quantity: number;
+  date: string;
+  activity_type: ActivityType;
   calories: number;
   note: string | null;
   created_at: string;
@@ -165,6 +160,26 @@ export interface ExerciseResponse {
   date: string;
   entries: ExerciseEntry[];
   totalCalories: number;
+}
+
+export interface StrengthLog {
+  id: number;
+  exercise_name: string;
+  weight_kg: number | null;
+  reps: number | null;
+  sets: number | null;
+  note: string | null;
+  date: string;
+  created_at: string;
+}
+
+export interface NewStrengthLog {
+  exercise_name: string;
+  weight_kg?: number | null;
+  reps?: number | null;
+  sets?: number | null;
+  note?: string | null;
+  date?: string;
 }
 
 export interface Insights {
@@ -208,6 +223,10 @@ export const api = {
     request<{ foods: Food[] }>(`/api/foods?q=${encodeURIComponent(q)}`),
   addFood: (food: NewFood) =>
     request<Food>("/api/foods", { method: "POST", body: JSON.stringify(food) }),
+  myFoods: () => request<{ foods: Food[] }>("/api/foods/mine"),
+  updateFood: (id: number, food: NewFood) =>
+    request<Food>(`/api/foods/${id}`, { method: "PATCH", body: JSON.stringify(food) }),
+  deleteFood: (id: number) => request<{ ok: true }>(`/api/foods/${id}`, { method: "DELETE" }),
 
   entries: (date: string) => request<EntriesResponse>(`/api/entries?date=${date}`),
   addEntryFromFood: (date: string, category_id: number, food_id: number, quantity: number) =>
@@ -236,23 +255,22 @@ export const api = {
   insights: (month: string) => request<Insights>(`/api/insights?month=${month}`),
 
   exercise: (date: string) => request<ExerciseResponse>(`/api/exercise?date=${date}`),
-  addExerciseEntryFromCatalog: (date: string, exercise_id: number, quantity: number) =>
+  addExerciseEntry: (date: string, activity_type: ActivityType, calories: number, note?: string) =>
     request<ExerciseEntry>("/api/exercise", {
       method: "POST",
-      body: JSON.stringify({ date, exercise_id, quantity }),
-    }),
-  addCustomExerciseEntry: (date: string, calories: number, note?: string) =>
-    request<ExerciseEntry>("/api/exercise", {
-      method: "POST",
-      body: JSON.stringify({ date, calories, note }),
+      body: JSON.stringify({ date, activity_type, calories, note }),
     }),
   deleteExercise: (id: number) =>
     request<{ ok: true }>(`/api/exercise/${id}`, { method: "DELETE" }),
 
-  searchExercises: (q: string, muscleGroup?: string) =>
+  exerciseGuide: (muscleGroup?: string) =>
     request<{ exercises: Exercise[] }>(
-      `/api/exercises?q=${encodeURIComponent(q)}${muscleGroup ? `&muscle_group=${encodeURIComponent(muscleGroup)}` : ""}`
+      `/api/exercises?q=${muscleGroup ? `&muscle_group=${encodeURIComponent(muscleGroup)}` : ""}`
     ),
-  addExerciseToCatalog: (exercise: NewExercise) =>
-    request<Exercise>("/api/exercises", { method: "POST", body: JSON.stringify(exercise) }),
+
+  strengthLogs: () => request<{ entries: StrengthLog[] }>("/api/strength"),
+  addStrengthLog: (log: NewStrengthLog) =>
+    request<StrengthLog>("/api/strength", { method: "POST", body: JSON.stringify(log) }),
+  deleteStrengthLog: (id: number) =>
+    request<{ ok: true }>(`/api/strength/${id}`, { method: "DELETE" }),
 };

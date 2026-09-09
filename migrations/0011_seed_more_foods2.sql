@@ -1,0 +1,16 @@
+INSERT INTO foods (name, unit_label, calories, protein, carbs, fat, fiber, is_global, user_id) VALUES
+('Poha', '1 bowl (~150g)', 250, 4, 45, 7, 3, 1, NULL),
+('Kismis, soaked', '10-12 pieces', 40, 0.4, 10, 0, 0.5, 1, NULL),
+('Coconut water', '1 glass (~240ml)', 45, 0.5, 9, 0.5, 1, 1, NULL),
+('Egg bhurji', '1 egg, default', 90, 6, 2, 7, 0.3, 1, NULL),
+('Plain tawa roti with ghee', '1 piece + 1 tsp ghee', 165, 3, 18, 8, 2, 1, NULL),
+('Brown bread', '1 slice', 70, 3.5, 12, 1, 2, 1, NULL),
+('Peanut butter', '1 spoon', 95, 3.6, 3.1, 8, 1, 1, NULL),
+('Mung dal khichdi', '1 bowl (~200g)', 220, 8, 38, 4, 5, 1, NULL),
+('Egg curry', '1 egg, default', 180, 8, 6, 14, 1, 1, NULL),
+('Aalu tikki', '1 piece', 120, 2, 16, 6, 1.5, 1, NULL),
+('Roasted aloo with dahi (preworkout)', '1 bowl', 200, 6, 30, 6, 2.5, 1, NULL),
+('Fish fry', '1 piece (~100g)', 200, 20, 8, 10, 0.5, 1, NULL),
+('Dosa, plain', '1 piece', 133, 3, 20, 4, 1, 1, NULL),
+('Veg biryani', '1 bowl (~200g)', 290, 6, 45, 9, 3, 1, NULL),
+('Chicken biryani', '1 bowl (~250g)', 400, 22, 45, 14, 2, 1, NULL);

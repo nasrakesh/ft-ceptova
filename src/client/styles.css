@@ -459,7 +459,12 @@ input {
 }
 
 .app-bar-right .user-email {
-  display: none;
+  display: inline-block;
+  max-width: 40vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
 }
 
 .app-bar-right .link-btn {
@@ -501,7 +506,7 @@ input {
 
 @media (min-width: 460px) {
   .app-bar-right .user-email {
-    display: inline;
+    max-width: none;
     font-size: 0.85rem;
   }
 }
@@ -1193,4 +1198,101 @@ input {
 
 .insight-tips li {
   color: var(--text);
+}
+
+/* Exercise sub-tabs (Burn Log / Progress / Guide) */
+
+.exercise-subtabs {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+}
+
+.exercise-subtabs .tab {
+  flex: 1;
+  text-align: center;
+}
+
+/* Exercise guide */
+
+.guide-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guide-item {
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+.guide-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.guide-item-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 8px 0;
+  text-align: left;
+  color: var(--text);
+}
+
+.guide-item-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 0 10px 22px;
+}
+
+.guide-instructions {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.trend-up {
+  color: var(--status-good, #2e9e5b);
+  font-weight: 600;
+}
+
+.trend-down {
+  color: var(--status-serious, #d1495b);
+  font-weight: 600;
+}
+
+/* My Foods (Settings) */
+
+.food-manage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.food-manage-row-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.food-manage-row-header .food-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
 }
