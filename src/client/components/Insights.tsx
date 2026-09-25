@@ -64,6 +64,14 @@ function MacroBar({
 }
 
 export default function Insights() {
+  return (
+    <div className="log-screen">
+      <Overview />
+    </div>
+  );
+}
+
+function Overview() {
   const [month, setMonth] = useState(currentMonth());
   const [data, setData] = useState<InsightsData | null>(null);
   const [selected, setSelected] = useState<{ date: string; calories: number } | null>(null);
