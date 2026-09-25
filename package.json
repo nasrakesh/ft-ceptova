@@ -29,7 +29,9 @@
     "db:seed5:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0011_seed_more_foods2.sql",
     "db:seed5:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0011_seed_more_foods2.sql",
     "db:seed6:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0012_seed_more_users.sql",
-    "db:seed6:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0012_seed_more_users.sql"
+    "db:seed6:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0012_seed_more_users.sql",
+    "db:seed7:local": "wrangler d1 execute ft-ceptova-db --local --file=./migrations/0013_seed_more_foods3.sql",
+    "db:seed7:remote": "wrangler d1 execute ft-ceptova-db --remote --file=./migrations/0013_seed_more_foods3.sql"
   },
   "dependencies": {
     "hono": "^4.6.9",
