@@ -1124,6 +1124,10 @@ input {
   background: var(--seq-500);
 }
 
+.bar-chart-bar.selected {
+  background: var(--accent);
+}
+
 .bar-chart-goal-line {
   position: absolute;
   left: 0;
@@ -1144,47 +1148,168 @@ input {
   gap: 10px;
 }
 
-.macro-bar-row {
+.meter-row {
   display: grid;
-  grid-template-columns: 70px 1fr 90px;
+  grid-template-columns: 70px 1fr 84px;
   align-items: center;
   gap: 10px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }
 
-.macro-bar-label {
+.meter-label {
   display: flex;
   align-items: center;
   color: var(--muted);
   white-space: nowrap;
 }
 
-.macro-bar-track {
+.meter-track {
   position: relative;
-  height: 10px;
-  background: var(--bg);
-  border-radius: 6px;
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--meter-color, var(--accent)) 16%, var(--surface));
   overflow: visible;
 }
 
-.macro-bar-fill {
+.meter-fill {
   height: 100%;
-  border-radius: 6px;
+  border-radius: 999px;
+  background: var(--meter-color, var(--accent));
+  transition: width 0.3s ease;
 }
 
-.macro-bar-goal-tick {
+.meter-goal-tick {
   position: absolute;
   top: -3px;
   width: 2px;
-  height: 16px;
+  height: 18px;
   background: var(--text);
-  opacity: 0.4;
+  opacity: 0.35;
+  border-radius: 1px;
 }
 
-.macro-bar-value {
+.meter-value {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* Insights: day summary */
+
+.day-summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.day-ring-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.day-ring {
+  --pct: 0;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--accent) calc(var(--pct) * 1%),
+    color-mix(in srgb, var(--accent) 14%, var(--surface)) 0
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.day-ring::before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.day-ring-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.day-ring-value {
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.day-ring-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.day-meters {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-empty-note {
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+/* Insights: monthly section card */
+
+.insights-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insights-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.insights-section-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.insights-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.insights-month-nav button {
+  border: none;
+  background: none;
+  color: var(--text);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  font-size: 1.05rem;
+}
+
+.insights-month-nav button:active {
+  background: var(--bg);
 }
 
 .insight-tips {
